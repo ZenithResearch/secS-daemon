@@ -18,6 +18,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # 0. Initialize Rust Cache
+    # This action automatically caches ~/.cargo/registry, ~/.cargo/git, and target/
+    - name: Setup Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        # Group the cache across all jobs sharing this key prefix
+        shared-key: "zenith-core"
+
     # 1. Enforce Formatting
     - name: Check Formatting
       run: cargo fmt --all -- --check

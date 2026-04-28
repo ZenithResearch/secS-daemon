@@ -1,0 +1,43 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Force Rust to backtrace on panics during tests
+  RUST_BACKTRACE: 1
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # 0. Initialize Rust Cache
+    # This action automatically caches ~/.cargo/registry, ~/.cargo/git, and target/
+    - name: Setup Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        # Group the cache across all jobs sharing this key prefix
+        shared-key: "zenith-core"
+
+    # 1. Enforce Formatting
+    - name: Check Formatting
+      run: cargo fmt --all -- --check
+
+    # 2. Enforce Zero Warnings (Clippy)
+    - name: Run Clippy
+      run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+    # 3. Build Everything (including tests and benchmarks without running them)
+    - name: Build All Targets
+      run: cargo build --workspace --all-targets --all-features --verbose
+
+    # 4. Execute the Hardened Test Suite
+    - name: Run Tests
+      run: cargo test --workspace --all-targets --all-features --verbose

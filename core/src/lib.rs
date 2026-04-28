@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "uniffi"), no_std)]
 extern crate alloc;
 
 use alloc::vec::Vec;
@@ -9,7 +9,6 @@ pub mod tunnel;
 #[cfg(feature = "uniffi")]
 pub mod ffi;
 
-// Standard Opcodes (Epic 1.7)
 pub const OPCODE_GENERATE: u8 = 0x01;
 pub const OPCODE_CHAT: u8 = 0x02;
 
@@ -70,13 +69,8 @@ mod tests {
 
     #[test]
     fn test_handshake_in_encrypted_payload() {
-        let handshake = SessionHandshake {
-            ephemeral_public_key: [0xFF; 32],
-            timestamp: 1234567890,
-        };
-
-        let mut encrypted_payload = alloc::vec![0x01; 32]; // ephemeral_public_key placeholder
-        encrypted_payload.extend_from_slice(&[0x02]); // timestamp placeholder
+        let mut encrypted_payload = alloc::vec![0x01; 32]; 
+        encrypted_payload.extend_from_slice(&[0x02]); 
 
         let packet = ZenithPacket {
             session_id: [0xAA; 16],

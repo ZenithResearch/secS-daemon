@@ -75,9 +75,8 @@ mod tests {
             timestamp: 1234567890,
         };
 
-        // Fix: Correct initialization of the test payload
         let mut encrypted_payload = alloc::vec![0x01; 32]; // ephemeral_public_key placeholder
-        encrypted_payload.push(0x02); // timestamp placeholder
+        encrypted_payload.extend_from_slice(&[0x02]); // timestamp placeholder
 
         let packet = ZenithPacket {
             session_id: [0xAA; 16],

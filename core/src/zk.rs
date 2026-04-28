@@ -1,12 +1,9 @@
-#![no_std]
-extern crate alloc;
 use alloc::vec::Vec;
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
 use rs_merkle::{MerkleProof, algorithms::Sha256};
 
 pub fn generate_proof(keypair: &SigningKey, message: &[u8]) -> Vec<u8> {
-    let mut signer = keypair;
-    let signature = signer.sign(message);
+    let signature = keypair.sign(message);
     signature.to_bytes().to_vec()
 }
 
@@ -38,17 +35,13 @@ mod tests {
 
     #[test]
     fn test_proof_cycle() {
-        // Generate a new signing key
         let keypair = SigningKey::generate(&mut OsRng);
         let public_key = keypair.verifying_key();
 
-        // Create a test message
         let message: &[u8] = b"test proof cycle message";
 
-        // Generate proof (signature)
         let signature_bytes = generate_proof(&keypair, message);
 
-        // Verify the proof
         assert!(verify_proof(&public_key, &signature_bytes, message));
     }
 }

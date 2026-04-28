@@ -9,6 +9,10 @@ pub mod tunnel;
 #[cfg(feature = "uniffi")]
 pub mod ffi;
 
+// Standard Opcodes (Epic 1.7)
+pub const OPCODE_GENERATE: u8 = 0x01;
+pub const OPCODE_CHAT: u8 = 0x02;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[repr(C)]
 pub struct ZenithPacket {
@@ -38,7 +42,7 @@ mod tests {
         let packet = ZenithPacket {
             session_id: [0xAA; 16],
             nonce: [0xBB; 12],
-            opcode: 1,
+            opcode: OPCODE_GENERATE,
             proof: alloc::vec![0xCC; 64],
             claim_ttl: 3600,
             encrypted_payload: alloc::vec![0xDD; 128],
@@ -71,16 +75,15 @@ mod tests {
             timestamp: 1234567890,
         };
 
-        let encrypted_payload = alloc::vec![
-            0x01; 32, // ephemeral_public_key placeholder
-            0x02,     // timestamp placeholder
-        ];
+        // Fix: Correct initialization of the test payload
+        let mut encrypted_payload = alloc::vec![0x01; 32]; // ephemeral_public_key placeholder
+        encrypted_payload.push(0x02); // timestamp placeholder
 
         let packet = ZenithPacket {
             session_id: [0xAA; 16],
             nonce: [0xBB; 12],
-            opcode: 0x01,
-            proof: vec![],
+            opcode: OPCODE_CHAT,
+            proof: alloc::vec![],
             claim_ttl: 3600,
             encrypted_payload,
             mac: [0x00; 16],

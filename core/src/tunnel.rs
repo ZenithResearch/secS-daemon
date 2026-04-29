@@ -36,8 +36,8 @@ mod tests {
 
     #[test]
     fn test_tunnel_cycle() {
-        let alice_secret = EphemeralSecret::random_from_rng(&mut OsRng);
-        let bob_secret = EphemeralSecret::random_from_rng(&mut OsRng);
+        let alice_secret = EphemeralSecret::random_from_rng(OsRng);
+        let bob_secret = EphemeralSecret::random_from_rng(OsRng);
 
         // Dalek 2.0 requires explicitly converting the reference to a PublicKey
         let alice_public = PublicKey::from(&alice_secret);

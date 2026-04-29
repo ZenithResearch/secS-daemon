@@ -7,6 +7,12 @@ pub struct SessionStore {
     sessions: Arc<RwLock<HashMap<String, Instant>>>,
 }
 
+impl Default for SessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SessionStore {
     pub fn new() -> Self {
         Self {

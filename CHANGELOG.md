@@ -15,6 +15,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Reworked the README into a Zenith-style Cybernetic Synapse document and added the launch thread artifact — clarifies the developer value proposition, agentic ecosystem benefits, and secS/secZ boundary in the brand's precise technical voice.
 - Refactored the server into a reusable TCP node runner plus secS router — separates the stable secS protocol interface from the extensible secZ execution gateway.
 
 ### Fixed

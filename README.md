@@ -1,10 +1,7 @@
 # secS-daemon
 
-<div style="background:#131a18; border:1px solid rgba(155,251,227,0.18); border-radius:12px; padding:28px 32px; margin:24px 0; color:#D1FAF0; font-family:system-ui,-apple-system,sans-serif;">
-  <div style="font-family:'Courier New',monospace; color:#9BFBE3; font-size:11px; letter-spacing:0.12em; margin-bottom:16px;">ZENITH TRANSPORT ARCHITECTURE</div>
-  <div style="font-size:30px; line-height:1.15; font-weight:650; color:#D1FAF0; margin-bottom:14px;">Build the Egregore.</div>
-  <div style="font-size:16px; line-height:1.6; color:rgba(209,250,240,0.82); max-width:840px;">secS-daemon is a Cybernetic Synapse for agentic communication: a cryptographic packet gate, a configurable execution sidecar, and a language-agnostic rail for machines that need to coordinate without renting trust from a platform.</div>
-</div>
+secS-daemon is a Cybernetic Synapse for agentic communication: a cryptographic packet gate, a configurable execution sidecar, and a language-agnostic rail for machines that need to coordinate without renting trust from a platform.
+
 
 Most agent systems still speak through Web2 duct tape. REST endpoints. Webhooks. API keys. JSON-shaped trust. It works until agents need to coordinate like machines instead of pretending to be users clicking through apps.
 

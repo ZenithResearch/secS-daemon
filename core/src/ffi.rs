@@ -1,3 +1,6 @@
+#![cfg(target_arch = "wasm32")]
+#![cfg(feature = "uniffi")]
+
 extern crate alloc;
 use alloc::vec::Vec;
 use wasm_bindgen::prelude::*;

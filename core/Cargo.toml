@@ -7,14 +7,20 @@ edition = "2021"
 crate-type = ["rlib", "cdylib", "staticlib"]
 
 [dependencies]
-serde = { workspace = true }
-bincode = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
 ed25519-dalek = { version = "2.1", default-features = false }
 x25519-dalek = { version = "2.0", default-features = false }
 chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
 rs_merkle = { version = "1.4", default-features = false }
-uniffi = "0.25"
-wasm-bindgen = { version = "0.2", default-features = false }
+wasm-bindgen = { version = "0.2", optional = true }
+uniffi = { version = "0.25", optional = true }
+
+[dev-dependencies]
+rand = { version = "0.8", features = ["getrandom"] }
+
+[features]
+uniffi = ["dep:wasm-bindgen", "dep:uniffi"]
 
 [build-dependencies]
 uniffi = { version = "0.25", features = ["build"] }

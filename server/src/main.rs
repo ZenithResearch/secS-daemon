@@ -1,68 +1,33 @@
-use tokio::net::{TcpListener, TcpStream};
-use tokio::io::AsyncReadExt;
-use tokio::io::AsyncWriteExt;
-use libsec_core::ZenithPacket;
-use bincode;
+use async_trait::async_trait;
+use libsec_core::{OPCODE_CHAT, OPCODE_GENERATE};
+use server::{run_node, session::SessionStore, PayloadRouter};
+use std::sync::Arc;
 
-async fn process_payload(opcode: u8, payload: Vec<u8>) {
-    match opcode {
-        0x01 => println!("Handoff: Processing Chat Message..."),
-        0x02 => println!("Handoff: Processing System Command..."),
-        _ => println!("Handoff: Unknown Opcode received"),
-    }
-}
+struct SecSRouter;
 
-async fn handle_client(mut socket: TcpStream) {
-    let mut buf = [0; 1024];
-    loop {
-        let n = socket.read(&mut buf).await.expect("failed to read data from socket");
-        if n == 0 {
-            return;
-        }
-        
-        if n > 0 {
-            match bincode::deserialize::<ZenithPacket>(&buf[..n]) {
-                Ok(packet) => {
-                    println!("Packet Received: Opcode {}", packet.opcode);
-                    if !packet.proof.is_empty() {
-                        println!("Validating Proof...");
-                    }
-                    process_payload(packet.opcode, packet.encrypted_payload).await;
+#[async_trait]
+impl PayloadRouter for SecSRouter {
+    async fn route(&self, store: &SessionStore, opcode: u8, _payload: Vec<u8>) {
+        match opcode {
+            OPCODE_GENERATE => println!("Handoff: Local Generate Handler..."),
+            OPCODE_CHAT => {
+                let session_id = "chat_01";
+                if store.is_active(session_id).await {
+                    println!("Handoff: Resuming active Chat Session [{}]...", session_id);
+                } else {
+                    println!("Handoff: Initiating new Chat Session [{}]...", session_id);
                 }
-                Err(e) => eprintln!("Failed to deserialize packet: {}", e),
+                store.register_session(session_id.to_string()).await;
             }
+            0x10 | 0x20 => println!("Handoff: Dispatching to secZ Hub..."),
+            _ => println!("Handoff: Unknown Opcode received"),
         }
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let listener = TcpListener::bind("0.0.0.0:9000").await.expect("failed to bind");
-    println!("secS Daemon: Listening on 0.0.0.0:9000");
-    loop {
-        match listener.accept().await {
-            Ok((socket, _)) => tokio::spawn(async move { handle_client(socket).await; }),
-            Err(e) => eprintln!("Failed to accept connection: {}", e),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tokio::io::AsyncWriteExt;
-
-    #[tokio::test]
-    async fn test_daemon_connection() {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let addr = listener.local_addr().unwrap();
-
-        tokio::spawn(async move {
-            let (socket, _) = listener.accept().await.unwrap();
-            handle_client(socket).await;
-        });
-
-        let mut stream = TcpStream::connect(addr).await.unwrap();
-        stream.write_all(b"ZENITH_PING").await.unwrap();
-    }
+    let session_store = Arc::new(SessionStore::new());
+    let router = Arc::new(SecSRouter);
+    run_node("0.0.0.0:9000", session_store, router).await;
 }

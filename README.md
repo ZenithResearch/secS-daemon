@@ -1,57 +1,175 @@
 # secS-daemon
 
-secS-daemon is a Cybernetic Synapse: a minimal cryptographic transport layer for moving machine intent across trust boundaries, then binding that intent to concrete execution surfaces.
+<div style="background:#131a18; border:1px solid rgba(155,251,227,0.18); border-radius:12px; padding:28px 32px; margin:24px 0; color:#D1FAF0; font-family:system-ui,-apple-system,sans-serif;">
+  <div style="font-family:'Courier New',monospace; color:#9BFBE3; font-size:11px; letter-spacing:0.12em; margin-bottom:16px;">ZENITH TRANSPORT ARCHITECTURE</div>
+  <div style="font-size:30px; line-height:1.15; font-weight:650; color:#D1FAF0; margin-bottom:14px;">Build the Egregore.</div>
+  <div style="font-size:16px; line-height:1.6; color:rgba(209,250,240,0.82); max-width:840px;">secS-daemon is a Cybernetic Synapse for agentic communication: a cryptographic packet gate, a configurable execution sidecar, and a language-agnostic rail for machines that need to coordinate without renting trust from a platform.</div>
+</div>
 
-The repository contains two intentionally separate interfaces:
+Most agent systems still speak through Web2 duct tape. REST endpoints. Webhooks. API keys. JSON-shaped trust. It works until agents need to coordinate like machines instead of pretending to be users clicking through apps.
 
-- secS (`server/src/main.rs`, port `9000`): the stable secure service interface. It handles the canonical `OPCODE_GENERATE = 0x01` and `OPCODE_CHAT = 0x02` protocol surface used by the secS daemon.
-- secZ (`server/src/bin/secz.rs`, port `9001`): the extensible sidecar gateway. It accepts the same `ZenithPacket` envelope, validates the proof envelope, decrypts payload bytes when a tunnel key is configured, and dispatches by `u8` opcode to a configured `MachineProgram`.
+secS-daemon gives agents a different primitive: prove identity, deliver encrypted intent, route by opcode, execute only what the receiving node has explicitly bound.
 
-secS is the protocol-facing daemon. secZ is the configurable execution synapse.
+No landlord. No shared bearer secret. No platform permission in the middle.
 
-## System Identity
+## Announcement Thread
 
-secZ is a cryptographically hardened, zero-knowledge authenticated Machine-to-Machine transport node and execution gateway.
+The launch thread lives in `docs/announcement-thread.md`.
 
-Design pattern:
-
-- Pure Sidecar / Reverse-Proxy Gateway.
-
-Core tenet:
-
-- secZ is strictly a secure execution environment.
-- secZ contains no internal domain logic.
-- secZ contains no agents.
-- secZ contains no external `hub` crate dependencies.
-
-Configuration-as-code:
-
-- `server/src/bin/secz.rs::main()` is the deployment manifest.
-- The manifest binds `u8` opcodes directly to system capabilities.
-- Adding a capability should be a small, auditable manifest diff.
-
-## Repository Topology
+Opener:
 
 ```text
-secS-daemon/
-├── core/                  # libsec-core: packet schema, ZK proof helpers, tunnel crypto
-│   └── src/
-│       ├── lib.rs          # ZenithPacket, SessionHandshake, opcode constants
-│       ├── zk.rs           # Ed25519 proof generation/verification helpers
-│       ├── tunnel.rs       # X25519 + ChaCha20Poly1305 payload crypto
-│       └── ffi.rs          # optional FFI/WASM bindings
-├── client/                # secC companion client
-│   └── src/main.rs         # generate/chat/hub packet sender
-├── server/
-│   └── src/
-│       ├── main.rs         # secS daemon on 0.0.0.0:9000
-│       ├── lib.rs          # shared TCP node runner and PayloadRouter trait
-│       ├── session.rs      # lightweight session state for secS
-│       └── bin/secz.rs     # secZ configurable sidecar gateway on 0.0.0.0:9001
-├── examples/
-│   └── hello-world.sh      # quick-start opcode pipe demo
-└── README.md
+Build the Egregore.
+
+secS-daemon is the secure nervous system for agentic communication: ZK-authenticated M2M transport, opcode-bound execution, and peer nodes that turn proof into action.
 ```
+
+## The Shape of the System
+
+```text
+                 ┌──────────────────────────────────────────────┐
+                 │                  secC                        │
+                 │        JIT proving client / packet sender     │
+                 └──────────────────────┬───────────────────────┘
+                                        │ ZenithPacket
+                                        │ bincode over TCP
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                secS                                     │
+│                 open mathematical gatekeeper · port 9000                │
+│                                                                         │
+│  verify proof envelope  →  enforce temporal claim  →  hand off bytes    │
+│                                                                         │
+│  no roles · no product policy · no hub dependency · no domain logic     │
+└───────────────────────────────────────┬─────────────────────────────────┘
+                                        │ same packet contract
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                secZ                                     │
+│                 configurable execution synapse · port 9001              │
+│                                                                         │
+│  decrypt payload  →  log telemetry  →  route opcode  →  execute binding │
+│                                                                         │
+│        0x10 → bash          0x20 → native Rust        0x30 → jq          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## secS vs secZ
+
+These interfaces are separate on purpose.
+
+| Interface | Port | Job | What it refuses |
+| --- | ---: | --- | --- |
+| `secS` | `9000` | Stable secure service interface. It handles canonical daemon traffic like `OPCODE_GENERATE = 0x01` and `OPCODE_CHAT = 0x02`. | Product policy, role logic, agent orchestration, payment logic. |
+| `secZ` | `9001` | Extensible sidecar gateway. It validates the proof envelope, decrypts payload bytes when a tunnel key is configured, logs telemetry, and dispatches by `u8` opcode to a configured `MachineProgram`. | Hub dependencies, arbitrary shell access, hidden routing policy, payload parsing in the router. |
+
+secS is the mathematical gate. secZ is the execution synapse.
+
+## Why This Exists
+
+Agents need owned communication rails.
+
+The current default asks machine systems to coordinate through infrastructure built for browser users: OAuth flows, REST APIs, webhooks, shared API keys, and centralized gateways. Those primitives are useful. They are not enough for peer machine execution.
+
+secS-daemon changes the default shape.
+
+- **Proof replaces bearer secrets.** A packet without a valid proof envelope is rejected before it becomes useful.
+- **Opcodes replace arbitrary authority.** An agent does not receive a shell. It receives a bounded intent channel.
+- **Local manifests replace platform policy.** The receiving machine decides what `0x20` means.
+- **stdin replaces framework lock-in.** Rust can secure the transport while Python, Bash, Node, `jq`, or a local worker handles execution.
+- **SQLite telemetry replaces rented observability.** The node records opcode and payload size locally, without a SaaS dependency.
+- **Peer nodes replace central gateways.** A MacBook, Raspberry Pi, GPU instance, homelab server, or cloud box can all run the same rail.
+
+That is the cybernetic benefit: machines coordinate through a nervous system they own.
+
+## Developer Value Proposition
+
+### 1. Polyglot sidecar
+
+secZ pipes decrypted payload bytes into `stdin`. That means the execution surface can be whatever your team already uses.
+
+```text
+Rust transport → Python model worker
+Rust transport → Bash queue script
+Rust transport → jq parser
+Rust transport → local CLI
+Rust transport → native Rust binding
+```
+
+The packet does not care what language receives the intent.
+
+### 2. Zero-trust by default
+
+API keys leak because they are portable authority. secS-daemon moves authority into the packet envelope.
+
+The intended order is strict:
+
+```text
+proof first → decrypt second → route third → execute only if bound
+```
+
+An invalid packet never becomes an application request.
+
+### 3. Unix philosophy for agent swarms
+
+secZ does one thing: secure transport and handoff.
+
+Every new capability should not have to rebuild authentication, networking, telemetry, and process handoff. Write the script. Bind the opcode. Keep the node sovereign.
+
+### 4. Configuration as code
+
+`server/src/bin/secz.rs::main()` is the deployment manifest.
+
+There is no sprawling YAML policy maze. The bindings are readable in one place:
+
+```rust
+router.register(0x10, Box::new(SubprocessForwarder::new(
+    "bash",
+    vec!["-c", "echo 'Bash received payload:'; cat"],
+)));
+
+router.register(0x20, Box::new(LocalRustQueue));
+router.register(0x30, Box::new(SubprocessForwarder::new("jq", vec!["."])));
+```
+
+The manifest is the firewall.
+
+## Agentic Ecosystem Value
+
+### True M2M RPC
+
+Tool calls are language-level requests. `ZenithPacket` is machine-level intent: signed, routed, decrypted, measured, and handed to a capability that already exists on the other side.
+
+This is a protocol upgrade from talking to executing.
+
+### Sandboxed capability routing
+
+Agents should not get broad machine authority.
+
+They should get bounded intent channels.
+
+Opcode `0x20` can mean “enqueue task” on one node and nothing on another. The receiving machine maintains sovereignty over what that opcode actually does.
+
+### Decentralized swarm topology
+
+secZ requires no central server and no domain dependency. Deploy it beside the thing that should receive intent.
+
+A mobile agent can send authenticated payloads to a GPU box. A homelab node can forward a job to a local queue. A field machine can trigger a constrained worker without exposing a general API.
+
+### Standardized agent intent
+
+A shared opcode vocabulary lets agents learn the shape of a network without inheriting its internals.
+
+Example direction:
+
+| Opcode | Intent class |
+| --- | --- |
+| `0x10` | Knowledge/query pipe |
+| `0x20` | Queue/enqueue action |
+| `0x30` | Structured JSON processing |
+| `0x40` | Site-specific service binding |
+
+The standard is small on purpose. Intent should be portable. Meaning remains local.
 
 ## ZenithPacket Envelope
 
@@ -80,9 +198,9 @@ secZ manifest opcodes currently bound:
 - `0x20` / decimal `32`: Native Rust queue stub.
 - `0x30` / decimal `48`: `jq .` JSON formatter/parser.
 
-Important CLI detail:
+CLI rule:
 
-- The `client hub` command parses opcode as decimal `u8`.
+- `client hub` parses opcode as decimal `u8`.
 - Use `16`, not `0x10`, when calling the client.
 
 ## secZ Execution Pipeline
@@ -108,7 +226,7 @@ secZ is stateless regarding domain logic, but it maintains a local audit log:
 - Table: `node_telemetry`
 - Fields: `id`, `timestamp`, `opcode`, `payload_size`
 
-Critical rule for future changes:
+Critical rule:
 
 - Do not use `sqlx::query!` or other compile-time SQL macros.
 - Use runtime SQL only:
@@ -121,10 +239,7 @@ sqlx::query("INSERT INTO node_telemetry (opcode, payload_size) VALUES (?, ?)")
     .await;
 ```
 
-Reason:
-
-- Compile-time SQLx macros require a database or offline cache at build time and can panic/fail in clean environments.
-- secZ must compile without a pre-existing SQLite database.
+Compile-time SQLx macros require a database or offline cache at build time. secZ must compile without a pre-existing SQLite database.
 
 ## MachineProgram Extensibility Model
 
@@ -135,15 +250,6 @@ secZ delegates decrypted payloads using this async trait:
 pub trait MachineProgram: Send + Sync {
     async fn execute(&self, payload: &[u8]);
 }
-```
-
-The manifest owns the registry:
-
-```rust
-let mut router = ConfigurableRouter::new(pool);
-router.register(0x10, Box::new(SubprocessForwarder::new("bash", vec!["-c", "echo 'Bash received payload:'; cat"])));
-router.register(0x20, Box::new(LocalRustQueue));
-router.register(0x30, Box::new(SubprocessForwarder::new("jq", vec!["."])));
 ```
 
 Approved expansion paradigms:
@@ -237,11 +343,9 @@ SECS_URL="127.0.0.1:9001" cargo run --bin client -- hub 48 '{"synapse":"online",
 
 Expected secZ output includes formatted JSON from `jq .`.
 
-## Binding Your Own Opcode to a Service
+## Bind Your Own Opcode
 
 1. Create a service that reads bytes from stdin.
-
-Example:
 
 ```bash
 mkdir -p services
@@ -278,26 +382,30 @@ Opcode conversion:
 
 - `0x40` hex = `64` decimal.
 
-## secS vs secZ
+## Repository Topology
 
-Use secS when:
-
-- You are exercising the canonical daemon interface.
-- You are working with core protocol operations like generate/chat.
-- You want stable default behavior on port `9000`.
-
-Use secZ when:
-
-- You want to bind machine opcodes to local tools or services.
-- You need M2M sidecar behavior on port `9001`.
-- You want a byte-level execution gateway with no hub dependency.
-- You want auditable, SQLite-backed telemetry per routed packet.
-
-Boundary rule:
-
-- secS defines the stable secure service surface.
-- secZ extends the synapse by binding opcodes to execution targets.
-- Do not merge hub-style agent/domain logic into secZ.
+```text
+secS-daemon/
+├── core/                  # libsec-core: packet schema, ZK proof helpers, tunnel crypto
+│   └── src/
+│       ├── lib.rs          # ZenithPacket, SessionHandshake, opcode constants
+│       ├── zk.rs           # Ed25519 proof generation/verification helpers
+│       ├── tunnel.rs       # X25519 + ChaCha20Poly1305 payload crypto
+│       └── ffi.rs          # optional FFI/WASM bindings
+├── client/                # secC companion client
+│   └── src/main.rs         # generate/chat/hub packet sender
+├── server/
+│   └── src/
+│       ├── main.rs         # secS daemon on 0.0.0.0:9000
+│       ├── lib.rs          # shared TCP node runner and PayloadRouter trait
+│       ├── session.rs      # lightweight session state for secS
+│       └── bin/secz.rs     # secZ configurable sidecar gateway on 0.0.0.0:9001
+├── docs/
+│   └── announcement-thread.md
+├── examples/
+│   └── hello-world.sh      # quick-start opcode pipe demo
+└── README.md
+```
 
 ## Development Validation
 
@@ -307,15 +415,16 @@ Build/check everything:
 cargo check --workspace
 ```
 
-Check only secZ:
+Run clippy with CI-equivalent strictness:
 
 ```bash
-cargo check --bin secz
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
-Run core crypto tests:
+Run all tests:
 
 ```bash
+cargo test --workspace
 cargo test -p libsec-core --all-features
 ```
 

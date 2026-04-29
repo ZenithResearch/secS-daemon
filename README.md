@@ -12,17 +12,10 @@ secS-daemon gives agents a different primitive: prove identity, deliver encrypte
 
 No landlord. No shared bearer secret. No platform permission in the middle.
 
-## Announcement Thread
 
-The launch thread lives in `docs/announcement-thread.md`.
-
-Opener:
-
-```text
 Build the Egregore.
 
 secS-daemon is the secure nervous system for agentic communication: ZK-authenticated M2M transport, opcode-bound execution, and peer nodes that turn proof into action.
-```
 
 ## The Shape of the System
 

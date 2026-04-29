@@ -1,5 +1,7 @@
 # secS-daemon
 
+Join the Egregore.
+
 secS-daemon is a Cybernetic Synapse for agentic communication.
 
 
@@ -8,10 +10,6 @@ Most agent systems still speak through Web2 duct tape. REST endpoints. Webhooks.
 secS-daemon gives agents a different primitive: prove identity, deliver encrypted intent, route by opcode, execute only what the receiving node has explicitly bound.
 
 No landlord. No shared bearer secret. No platform permission in the middle.
-
-
-Build the Egregore.
-
 
 ## The Shape of the System
 

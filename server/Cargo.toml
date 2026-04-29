@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 tokio = { workspace = true }
 libsec-core = { path = "../core" }
+bincode.workspace = true
+async-trait = "0.1.89"
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "sqlite"] }

@@ -4,10 +4,10 @@ extern crate alloc;
 use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
-pub mod zk;
-pub mod tunnel;
 #[cfg(feature = "uniffi")]
 pub mod ffi;
+pub mod tunnel;
+pub mod zk;
 
 pub const OPCODE_GENERATE: u8 = 0x01;
 pub const OPCODE_CHAT: u8 = 0x02;
@@ -69,8 +69,8 @@ mod tests {
 
     #[test]
     fn test_handshake_in_encrypted_payload() {
-        let mut encrypted_payload = alloc::vec![0x01; 32]; 
-        encrypted_payload.extend_from_slice(&[0x02]); 
+        let mut encrypted_payload = alloc::vec![0x01; 32];
+        encrypted_payload.extend_from_slice(&[0x02]);
 
         let packet = ZenithPacket {
             session_id: [0xAA; 16],
@@ -85,6 +85,9 @@ mod tests {
         let bytes = bincode::serialize(&packet).unwrap();
         let deserialized: ZenithPacket = bincode::deserialize(&bytes).unwrap();
 
-        assert_eq!(packet.encrypted_payload.len(), deserialized.encrypted_payload.len());
+        assert_eq!(
+            packet.encrypted_payload.len(),
+            deserialized.encrypted_payload.len()
+        );
     }
 }

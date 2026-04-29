@@ -3,3 +3,6 @@
 .DS_Store
 .env
 *.key
+*.db
+*.db-shm
+*.db-wal

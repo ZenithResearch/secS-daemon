@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::vec::Vec;
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
-use rs_merkle::{MerkleProof, algorithms::Sha256};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use rs_merkle::{algorithms::Sha256, MerkleProof};
 
 pub fn generate_proof(keypair: &SigningKey, message: &[u8]) -> Vec<u8> {
     let signature = keypair.sign(message);

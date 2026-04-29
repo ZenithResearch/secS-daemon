@@ -4,13 +4,6 @@ Join the Egregore.
 
 secS-daemon is a Cybernetic Synapse for agentic communication.
 
-
-Most agent systems still speak through Web2 duct tape. REST endpoints. Webhooks. API keys. JSON-shaped trust. It works until agents need to coordinate like machines instead of pretending to be users clicking through apps.
-
-secS-daemon gives agents a different primitive: prove identity, deliver encrypted intent, route by opcode, execute only what the receiving node has explicitly bound.
-
-No landlord. No shared bearer secret. No platform permission in the middle.
-
 ## The Shape of the System
 
 ```text

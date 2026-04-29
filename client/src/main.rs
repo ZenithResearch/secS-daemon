@@ -28,20 +28,22 @@ fn load_or_create_identity() -> SigningKey {
     SigningKey::from_bytes(&secret)
 }
 
-async fn dispatch_packet(identity: &SigningKey, server_addr: &str, opcode: u8, payload: Vec<u8>) {
-    let mut packet = ZenithPacket {
-        session_id: [0u8; 16],
+fn build_packet(identity: &SigningKey, opcode: u8, payload: Vec<u8>) -> ZenithPacket {
+    let proof = generate_proof(identity, &payload);
+
+    ZenithPacket {
+        session_id: [0xFF; 16],
         nonce: [0u8; 12],
         opcode,
-        proof: vec![],
+        proof,
         claim_ttl: 3600,
-        encrypted_payload: payload.clone(),
+        encrypted_payload: payload,
         mac: [0u8; 16],
-    };
+    }
+}
 
-    packet.session_id = [0xFF; 16];
-    packet.proof = generate_proof(identity, &payload);
-
+async fn dispatch_packet(identity: &SigningKey, server_addr: &str, opcode: u8, payload: Vec<u8>) {
+    let packet = build_packet(identity, opcode, payload);
     let bytes = bincode::serialize(&packet).unwrap();
     let mut stream = TcpStream::connect(server_addr)
         .await
@@ -78,5 +80,93 @@ async fn main() {
             );
             dispatch_packet(&identity, &cli.server, opcode, payload.into_bytes()).await;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+    use libsec_core::zk::verify_proof;
+
+    fn fixed_identity() -> SigningKey {
+        SigningKey::from_bytes(&[7u8; 32])
+    }
+
+    #[test]
+    fn build_packet_sets_canonical_envelope_fields() {
+        let identity = fixed_identity();
+        let packet = build_packet(&identity, 0x10, b"Hello World".to_vec());
+
+        assert_eq!(packet.session_id, [0xFF; 16]);
+        assert_eq!(packet.nonce, [0u8; 12]);
+        assert_eq!(packet.opcode, 0x10);
+        assert_eq!(packet.claim_ttl, 3600);
+        assert_eq!(packet.encrypted_payload, b"Hello World");
+        assert_eq!(packet.mac, [0u8; 16]);
+    }
+
+    #[test]
+    fn build_packet_signs_the_payload_bytes() {
+        let identity = fixed_identity();
+        let packet = build_packet(&identity, 0x20, b"signed payload".to_vec());
+
+        assert!(verify_proof(
+            &identity.verifying_key(),
+            &packet.proof,
+            &packet.encrypted_payload
+        ));
+    }
+
+    #[test]
+    fn packet_signature_does_not_verify_for_tampered_payload() {
+        let identity = fixed_identity();
+        let packet = build_packet(&identity, 0x20, b"signed payload".to_vec());
+
+        assert!(!verify_proof(
+            &identity.verifying_key(),
+            &packet.proof,
+            b"signed payloaE"
+        ));
+    }
+
+    #[test]
+    fn generate_command_maps_to_standard_generate_opcode() {
+        let cli = Cli::try_parse_from(["client", "generate", "prompt"]).unwrap();
+        match cli.command {
+            Commands::Generate { prompt } => assert_eq!(prompt, "prompt"),
+            _ => panic!("expected generate command"),
+        }
+    }
+
+    #[test]
+    fn chat_command_maps_to_standard_chat_payload() {
+        let cli = Cli::try_parse_from(["client", "chat", "hello"]).unwrap();
+        match cli.command {
+            Commands::Chat { message } => assert_eq!(message, "hello"),
+            _ => panic!("expected chat command"),
+        }
+    }
+
+    #[test]
+    fn hub_command_accepts_decimal_opcode() {
+        let cli = Cli::try_parse_from(["client", "hub", "16", "Hello World"]).unwrap();
+        match cli.command {
+            Commands::Hub { opcode, payload } => {
+                assert_eq!(opcode, 0x10);
+                assert_eq!(payload, "Hello World");
+            }
+            _ => panic!("expected hub command"),
+        }
+    }
+
+    #[test]
+    fn hub_command_rejects_hex_opcode_notation() {
+        assert!(Cli::try_parse_from(["client", "hub", "0x10", "Hello World"]).is_err());
+    }
+
+    #[test]
+    fn hub_command_rejects_opcode_above_u8_range() {
+        assert!(Cli::try_parse_from(["client", "hub", "256", "overflow"]).is_err());
     }
 }

@@ -34,19 +34,25 @@ pub struct SessionHandshake {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString;
+    use alloc::vec;
     use bincode;
 
-    #[test]
-    fn test_zenith_packet_serialization() {
-        let packet = ZenithPacket {
+    fn sample_packet() -> ZenithPacket {
+        ZenithPacket {
             session_id: [0xAA; 16],
             nonce: [0xBB; 12],
             opcode: OPCODE_GENERATE,
-            proof: alloc::vec![0xCC; 64],
+            proof: vec![0xCC; 64],
             claim_ttl: 3600,
-            encrypted_payload: alloc::vec![0xDD; 128],
+            encrypted_payload: vec![0xDD; 128],
             mac: [0xEE; 16],
-        };
+        }
+    }
+
+    #[test]
+    fn test_zenith_packet_serialization() {
+        let packet = sample_packet();
 
         let bytes = bincode::serialize(&packet).unwrap();
         let deserialized: ZenithPacket = bincode::deserialize(&bytes).unwrap();
@@ -69,14 +75,14 @@ mod tests {
 
     #[test]
     fn test_handshake_in_encrypted_payload() {
-        let mut encrypted_payload = alloc::vec![0x01; 32];
+        let mut encrypted_payload = vec![0x01; 32];
         encrypted_payload.extend_from_slice(&[0x02]);
 
         let packet = ZenithPacket {
             session_id: [0xAA; 16],
             nonce: [0xBB; 12],
             opcode: OPCODE_CHAT,
-            proof: alloc::vec![],
+            proof: vec![],
             claim_ttl: 3600,
             encrypted_payload,
             mac: [0x00; 16],
@@ -89,5 +95,59 @@ mod tests {
             packet.encrypted_payload.len(),
             deserialized.encrypted_payload.len()
         );
+    }
+
+    #[test]
+    fn zenith_packet_round_trips_empty_proof_and_empty_payload() {
+        let packet = ZenithPacket {
+            session_id: [0; 16],
+            nonce: [0; 12],
+            opcode: 0,
+            proof: vec![],
+            claim_ttl: 0,
+            encrypted_payload: vec![],
+            mac: [0; 16],
+        };
+
+        let bytes = bincode::serialize(&packet).unwrap();
+        let deserialized: ZenithPacket = bincode::deserialize(&bytes).unwrap();
+
+        assert_eq!(packet, deserialized);
+    }
+
+    #[test]
+    fn zenith_packet_round_trips_maximum_opcode() {
+        let mut packet = sample_packet();
+        packet.opcode = u8::MAX;
+
+        let bytes = bincode::serialize(&packet).unwrap();
+        let deserialized: ZenithPacket = bincode::deserialize(&bytes).unwrap();
+
+        assert_eq!(deserialized.opcode, u8::MAX);
+    }
+
+    #[test]
+    fn zenith_packet_deserialization_rejects_truncated_bytes() {
+        let packet = sample_packet();
+        let mut bytes = bincode::serialize(&packet).unwrap();
+        bytes.truncate(bytes.len() / 2);
+
+        let err = bincode::deserialize::<ZenithPacket>(&bytes).unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn session_handshake_preserves_timestamp_boundaries() {
+        for timestamp in [0, 1, u64::MAX] {
+            let handshake = SessionHandshake {
+                ephemeral_public_key: [0x42; 32],
+                timestamp,
+            };
+
+            let bytes = bincode::serialize(&handshake).unwrap();
+            let deserialized: SessionHandshake = bincode::deserialize(&bytes).unwrap();
+
+            assert_eq!(deserialized.timestamp, timestamp);
+        }
     }
 }
